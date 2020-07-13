@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Unity PUN Tutorial</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bulma/0.9.0/css/bulma.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.1.1/styles/default.min.css">
+	<link rel="stylesheet" href="css/dracula.css">
+    <link rel="stylesheet" href="css/style.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.1.1/highlight.min.js"></script>
+</head>
+<body>
+
+    <section class="section">
+        <div class="container">
+          <h1 class="title is-1">Unity and Photon Tutorial</h1>
+          <h2 class="subtitle is-3">How to setup Unity with Photon PUN, Chat, and Voice</h2>
+        </div>
+    </section>
+
+    <section class="section" id="install_unity">
+        <div class="container">
+            <div class="content">
+                <h3 class="title is-3">Contents</h3>
+                <ol>
+                    <li><a href="#install_unity">Install Unity</a></li>
+                    <li><a href="#import_photon">Import Photon</a></li>
+                    <li><a href="#create_photon_apps">Setup Photon Apps</a></li>
+                    <li><a href="#so_events">ScriptableObject Events</a></li>
+                </ol>
+            </div>
+        </div>
+    </section>
+
+    <section class="section" id="install_unity">
+        <div class="container">
+            <div class="content">
+                <h3 class="title is-3">Step 1 - Install Unity</h3>
+                <p>
+                    The first thing we need to do for any Unity project is...install Unity!  Now that 2019 has an LTS version I've switched over, and that's what we'll be using in this tutorial.  You can install it from the Unity Hub.
+                </p>
+                <figure class="image image-lg">
+                    <img src="pics/unityhub.png">
+                </figure>
+            </div>
+        </div>
+    </section>
+
+    <section class="section" id="import_photon">
+        <div class="container">
+            <div class="content">
+                <h3 class="title is-3">Step 2 - Import Photon</h3>
+                <p>
+                    Once you've installed Unity, we'll need to get Photon.  From the <code>Window</code> menu open up the <code>Asset Store</code> and search for <code>Photon Voice 2</code>.  The asset package for voice actually has Voice, Chat, and PUN included so that's all we need.  When Photon pops up a window asking for an App ID just select Skip and Close, we'll do that next.
+                </p>
+                <figure class="image image-lg">
+                    <img src="pics/pun_voice.png">
+                </figure>
+            </div>
+        </div>
+    </section>
+
+	<section class="section" id="create_photon_apps">
+        <div class="container">
+            <div class="content">
+                <h3 class="title is-3">Step 3 - Setup Photon Apps</h3>
+                <p>
+                    Now we need to create our Photon apps and get our App IDs.  Head over to <a target="_blank" href="https://www.photonengine.com/en-US/Photon">Photon</a> and create an account, and go to the Dashboard.  You'll need to create three apps.  One each for Chat, PUN2, and Voice2.  Once that's done head back into Unity, open the <code>Window</code> menu and select <code>Photon Unity Networking => Highlight Server Settings</code>.  Alternatively you can use the keyboard shortcut <code>Ctrl-Alt-Shift-P</code> to open the Server Settings.  Copy all your App IDs into their respective fields, and set the App Version to whatever.  Important note about the app version: as you continue developing your app and making changes, and updating your app version, your players will only be able to join games with other players using a game with the same version.  So a player using version 1.3 won't be able to join with another using 1.4, or even 1.31.
+                </p>
+				<div class="columns">
+	                <figure class="column image image-xl">
+	                    <img src="pics/photon_dash.png">
+	                </figure>
+					<figure class="column image image-sm">
+	                    <img src="pics/photon_server_settings.png">
+	                </figure>
+				</div>
+            </div>
+        </div>
+    </section>
+
+	<section class="section" id="so_events">
+        <div class="container">
+            <div class="content">
+                <h3 class="title is-3">Step 4 - ScriptableObject Events</h3>
+                <p>
+                    Yup, I know what you're thinking:  why are we worried about ScriptableObjects and Events in a multiplayer tutorial?  Well, if you aren't aware of the powers of combining these two things get ready!  Our project will mainly consist of two types of GameObjects:  one that has code that tells Photon to do something, and another that has code that lets the user tell it to do something.  What we want to avoid is having our user interact with UI that directly tells our game to do something.  This is a concept that has been gone over and over again in tons of places on the internet, and if you want to learn more you absolutely should.  Look into Event-Driven UI, or Decoupled UI.  This isn't a tutorial about those things, but we will be using them.  Eventually I plan to convert all this over to work in VR, and for that we ideally will have a completely different UI.  If I create all my UI and network logic together now I'll be repeating myself when I make a new UI.  That's bad.  Don't write the same code twice.
+                </p>
+				<p>Alright, let's get to some code.  Make a new folder in your <code>Assets</code> folder called <code>SO_Events</code>.  In this folder you'll make two scripts, <code>GameEvent.cs</code> and <code>GameEventListener.cs</code>.</p>
+				<div class="codeblock">
+					<pre>
+						<code>
+// GameEvent.cs
+
+namespace NetworkTutorial.GameEvents
+{
+    using UnityEngine;
+    using System.Collections.Generic;
+
+    [CreateAssetMenu(fileName = "GameEvent", menuName = "GameEvent")]
+    public class GameEvent : ScriptableObject
+    {
+        private List&lt;GameEventListener> listeners = new List&lt;GameEventListener>();
+
+        public void Raise()
+        {
+            for (int i = listeners.Count - 1; i >= 0; i--)
+            {
+                listeners[i].OnEventRaised();
+            }
+        }
+
+        public void AddListener(GameEventListener listener)
+        {
+            listeners.Add(listener);
+        }
+
+        public void RemoveListener(GameEventListener listener)
+        {
+            listeners.Remove(listener);
+        }
+    }
+}
+						</code>
+					</pre>
+				</div>
+				<div class="codeblock">
+					<pre>
+						<code>
+// GameEventListener.cs
+
+namespace NetworkTutorial.GameEvents
+{
+    using UnityEngine;
+    using UnityEngine.Events;
+
+    public class GameEventListener : MonoBehaviour
+    {
+        [SerializeField] private GameEvent gameEvent;
+        [SerializeField] private UnityEvent responseEvent;
+
+        private void OnEnable()
+        {
+            gameEvent.AddListener(this);
+        }
+
+        private void OnDisable()
+        {
+            gameEvent.RemoveListener(this);
+        }
+
+        public void OnEventRaised()
+        {
+            responseEvent.Invoke();
+        }
+    }
+}
+						</code>
+					</pre>
+				</div>
+            </div>
+        </div>
+    </section>
+
+
+	<script type="text/javascript">
+		hljs.initHighlightingOnLoad();
+	</script>
+</body>
+</html>

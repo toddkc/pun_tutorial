@@ -1,0 +1,23 @@
+p{
+    max-width: 720px;;
+}
+
+.image-sm{
+    max-width: 480px;
+}
+
+.image-md{
+    max-width: 640px;
+}
+
+.image-lg{
+    max-width: 720px;
+}
+
+.image-xl{
+    max-width: 1080px;
+}
+
+.codeblock{
+	max-width: 1080px;
+}
