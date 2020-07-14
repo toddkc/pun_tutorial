@@ -164,23 +164,127 @@ public class GameEventListener : MonoBehaviour
         <div class="container">
             <div class="content">
                 <h3 class="title is-3">Step 5 - CustomNetworkManager</h3>
-                <p>
-					A lot of people may have closed this page when they saw the word Manager, and I don't really blame them.  Good game architecture would argue that having a Manager is a bad idea.  In this case we need something to keep track of our PUN information, so we will go with a Manager.  The script won't be of an overwhelming size so I think it's okay here.  I'd love to hear your thoughts on how to architect this differently.
-                </p>
-				<p>Make a new script called <code>CustomNetworkManager.cs</code>.  This one will be bigger, so we'll do it in stages. The first change is to set our script to inherit from <code>MonoBehaviourPunCallbacks</code>.  This will allow us to override some methods to get notified when various Photon events happen. </p>
+                <p>Good game architecture would argue that having a Manager, which is generally a singleton, is a bad idea.  In this case we need something to keep track of our PUN information, so we will go with a Manager.  The script won't be of an overwhelming size so I think it's okay here.  I'd love to hear your thoughts on how to architect this differently.</p>
+				<p>Make a new script called <code>CustomNetworkManager.cs</code>.  This one will be bigger, so we'll do it in stages. The first change is to set our script to inherit from <code>MonoBehaviourPunCallbacks</code>.  This will allow us to override some methods to get notified when various Photon events happen.  Also, we need our Manager to be a singleton so let's get that setup. </p>
 				<div class="codeblock">
 	                <pre>
 						<code>
 using Photon.Pun;
+using Photon.Realtime;
 using UnityEngine;
 
 public class CustomNetworkManager : MonoBehaviourPunCallbacks
 {
+	public static CustomNetworkManager instance;
+
+	private void Awake()
+	{
+	    if (instance == null)
+	    {
+	        instance = this;
+	    }
+	    else
+	    {
+	        Destroy(gameObject);
+	    }
+	}
 }
 						</code>
 					</pre>
 				</div>
+				<p>So what happens now, if you aren't aware of how singletons work, is that when our game starts and <code>Awake</code> is called our Manager will check to see if the reference to itself, <code>instance</code>, exists or not.  We only ever want one of these to exist, and we want that instance available from anywhere, so we set it with the accessors <code>public static</code>.  In our Awake method if instance is null we will set instance to reference this specific script on this GameObject in our game.  If instance is not null, which means a GameObject with this script already exists in our game, we destroy this one.</p>
+
+
+				<h3 class="subtitle">PUN Callbacks</h3>
+				<p>We want our Manager to be notified when certain things happen.  To acheive this we will override some callbacks added with <code>MonoBehaviourPunCallbacks</code>.  In the code below I have added some comments to explain what they do, and I created a new variable <code>printDebug</code> so we can easily toggle having these events print a message in our editor console.  It seems like there are a lot of things here, but they are all pretty simple.  Generally there is a success and a failure event for a network task.</p>
             </div>
+			<div class="codeblock">
+				<pre>
+					<code>
+[SerializeField] private bool printDebug = true;
+
+/// &lt;summary>
+/// called when the game makes a connection to the PUN servers
+/// &lt;/summary>
+public override void OnConnectedToMaster()
+{
+    if (printDebug) Debug.Log("connected to PUN");
+}
+
+/// &lt;summary>
+/// called when the game disconnects from the PUN servers
+/// &lt;/summary>
+public override void OnDisconnected(DisconnectCause cause)
+{
+    if (printDebug) Debug.Log("disconnected from server");
+}
+
+/// &lt;summary>
+/// called when the local player joins a room
+/// &lt;/summary>
+public override void OnJoinedRoom()
+{
+    if (printDebug) Debug.Log("joined room: " + PhotonNetwork.CurrentRoom.Name);
+}
+
+/// &lt;summary>
+/// called when the local player leaves a room
+/// &lt;/summary>
+public override void OnLeftRoom()
+{
+    if (printDebug) Debug.Log("left room");
+}
+
+/// &lt;summary>
+/// called when the local player fails to join a specific room
+/// &lt;/summary>
+public override void OnJoinRoomFailed(short returnCode, string message)
+{
+    if (printDebug) Debug.Log("join room failed: " + message);
+}
+
+/// &lt;summary>
+/// called when the local player fails to join a random room
+/// &lt;/summary>
+public override void OnJoinRandomFailed(short returnCode, string message)
+{
+    if (printDebug) Debug.Log("join random failed");
+}
+
+/// &lt;summary>
+/// called when a network player joins the current room
+/// &lt;/summary>
+public override void OnPlayerEnteredRoom(Player newPlayer)
+{
+    if (printDebug) Debug.Log(newPlayer.NickName + "has joined the room");
+}
+
+/// &lt;summary>
+/// called when a network player leaves the current room
+/// &lt;/summary>
+public override void OnPlayerLeftRoom(Player otherPlayer)
+{
+    if (printDebug) Debug.Log(otherPlayer.NickName + " has left the room");
+}
+
+/// &lt;summary>
+/// called when we create a new room
+/// &lt;/summary>
+public override void OnCreatedRoom()
+{
+    if (printDebug) Debug.Log("created room: " + PhotonNetwork.CurrentRoom.Name);
+}
+
+/// &lt;summary>
+/// called when creating a room fails
+/// &lt;/summary>
+public override void OnCreateRoomFailed(short returnCode, string message)
+{
+    if (printDebug) Debug.Log("create room failed: " + message);
+}
+					</code>
+				</pre>
+			</div>
         </div>
     </section>
 
