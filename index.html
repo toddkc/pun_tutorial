@@ -28,6 +28,7 @@
                     <li><a href="#import_photon">Import Photon</a></li>
                     <li><a href="#create_photon_apps">Setup Photon Apps</a></li>
                     <li><a href="#so_events">ScriptableObject Events</a></li>
+                    <li><a href="#network_manager">Custom Network Manager</a></li>
                 </ol>
             </div>
         </div>
@@ -93,33 +94,30 @@
 						<code>
 // GameEvent.cs
 
-namespace NetworkTutorial.GameEvents
+using UnityEngine;
+using System.Collections.Generic;
+
+[CreateAssetMenu(fileName = "GameEvent", menuName = "GameEvent")]
+public class GameEvent : ScriptableObject
 {
-    using UnityEngine;
-    using System.Collections.Generic;
+    private List&lt;GameEventListener> listeners = new List&lt;GameEventListener>();
 
-    [CreateAssetMenu(fileName = "GameEvent", menuName = "GameEvent")]
-    public class GameEvent : ScriptableObject
+    public void Raise()
     {
-        private List&lt;GameEventListener> listeners = new List&lt;GameEventListener>();
-
-        public void Raise()
+        for (int i = listeners.Count - 1; i >= 0; i--)
         {
-            for (int i = listeners.Count - 1; i >= 0; i--)
-            {
-                listeners[i].OnEventRaised();
-            }
+            listeners[i].OnEventRaised();
         }
+    }
 
-        public void AddListener(GameEventListener listener)
-        {
-            listeners.Add(listener);
-        }
+    public void AddListener(GameEventListener listener)
+    {
+        listeners.Add(listener);
+    }
 
-        public void RemoveListener(GameEventListener listener)
-        {
-            listeners.Remove(listener);
-        }
+    public void RemoveListener(GameEventListener listener)
+    {
+        listeners.Remove(listener);
     }
 }
 						</code>
@@ -130,36 +128,58 @@ namespace NetworkTutorial.GameEvents
 						<code>
 // GameEventListener.cs
 
-namespace NetworkTutorial.GameEvents
+using UnityEngine;
+using UnityEngine.Events;
+
+public class GameEventListener : MonoBehaviour
 {
-    using UnityEngine;
-    using UnityEngine.Events;
+    [SerializeField] private GameEvent gameEvent;
+    [SerializeField] private UnityEvent responseEvent;
 
-    public class GameEventListener : MonoBehaviour
+    private void OnEnable()
     {
-        [SerializeField] private GameEvent gameEvent;
-        [SerializeField] private UnityEvent responseEvent;
+        gameEvent.AddListener(this);
+    }
 
-        private void OnEnable()
-        {
-            gameEvent.AddListener(this);
-        }
+    private void OnDisable()
+    {
+        gameEvent.RemoveListener(this);
+    }
 
-        private void OnDisable()
-        {
-            gameEvent.RemoveListener(this);
-        }
-
-        public void OnEventRaised()
-        {
-            responseEvent.Invoke();
-        }
+    public void OnEventRaised()
+    {
+        responseEvent.Invoke();
     }
 }
 						</code>
 					</pre>
 				</div>
-				<p>Code Explanation...</p>
+				<p>As mentioned before, this isn't going to be a ScriptableObject Event tutorial, but let's go through this code a little.  There isn't much to it so it won't take long.  Starting with <code>GameEvent.cs</code> right at the top we have an attribute, <code>CreateAssetMenu</code>.  This allows you to create a new GameEvent in your project by right-clicking in the Asset folder and selecting <code>Create => GameEvent</code>. Next, let's look at <code>AddListener</code> and <code>RemoveListener</code>.  These two public methods allow a GameEventListener to tell this GameEvent that it needs to be notified (or no longer notified) when the GameEvent is Raised.  Last, there is <code>OnEventRaised</code> that loops over all of the GameEventListeners that have told this GameEvent they want to know about it and tells them it's been Raised.  We loop over in descending order so that any GameEventListeners that may fire once and then remove themselves won't mess up the remaining order of the others in the List.  When the GameEvent is Raised it triggers a UnityEvent that can then be set and handled in the editor.  There is a lot of possibility with these GameEvents, but we'll barely be using any of it.  We just need an Event we can create in our project and link to a UnityEvent.
+				</p>
+            </div>
+        </div>
+    </section>
+
+	<section class="section" id="network_manager">
+        <div class="container">
+            <div class="content">
+                <h3 class="title is-3">Step 5 - CustomNetworkManager</h3>
+                <p>
+					A lot of people may have closed this page when they saw the word Manager, and I don't really blame them.  Good game architecture would argue that having a Manager is a bad idea.  In this case we need something to keep track of our PUN information, so we will go with a Manager.  The script won't be of an overwhelming size so I think it's okay here.  I'd love to hear your thoughts on how to architect this differently.
+                </p>
+				<p>Make a new script called <code>CustomNetworkManager.cs</code>.  This one will be bigger, so we'll do it in stages. The first change is to set our script to inherit from <code>MonoBehaviourPunCallbacks</code>.  This will allow us to override some methods to get notified when various Photon events happen. </p>
+				<div class="codeblock">
+	                <pre>
+						<code>
+using Photon.Pun;
+using UnityEngine;
+
+public class CustomNetworkManager : MonoBehaviourPunCallbacks
+{
+}
+						</code>
+					</pre>
+				</div>
             </div>
         </div>
     </section>
